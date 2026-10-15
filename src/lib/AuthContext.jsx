@@ -55,9 +55,10 @@ export function AuthProvider({ children }) {
     return updated;
   };
 
-  const loginWithGoogle = (tipo) => {
+  // volverA: ruta a la que vuelve después de Google (ej. la reserva en curso).
+  const loginWithGoogle = (tipo, volverA = '/') => {
     if (tipo) rememberPendingRole(tipo);
-    base44.auth.loginWithProvider('google', `${window.location.origin}/`);
+    base44.auth.loginWithProvider('google', `${window.location.origin}${volverA}`);
   };
 
   const logout = () => base44.auth.logout(`${window.location.origin}/ingreso`);

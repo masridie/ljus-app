@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ChevronRight, Plus } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import EditorServicio, { textoDuracion } from './EditorServicio';
+import EditorServicio from './EditorServicio';
+import { textoDuracion } from '@/lib/fechas';
 import { Button } from '@/components/ui/button';
 import { Card, Chip, SectionLabel, Spinner, Switch } from '@/components/ui/primitives';
 

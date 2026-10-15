@@ -2,10 +2,12 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import AppShell from '@/components/AppShell';
 import { Spinner } from '@/components/ui/primitives';
+import ElegirHorario from '@/pages/ElegirHorario';
 import Ingreso from '@/pages/Ingreso';
 import MiDisponibilidad from '@/pages/MiDisponibilidad';
 import Perfil from '@/pages/Perfil';
 import Pendiente from '@/pages/Pendiente';
+import Reservar from '@/pages/Reservar';
 
 function FullScreenSpinner() {
   return (
@@ -37,16 +39,30 @@ function HomeRedirect() {
   return <Navigate to="/ingreso" replace />;
 }
 
-function IngresoRoute() {
+// Pantallas que no exigen sesión, pero esperan a saber si hay una.
+function Publica({ children }) {
   const { isLoading } = useAuth();
-  return isLoading ? <FullScreenSpinner /> : <Ingreso />;
+  return isLoading ? <FullScreenSpinner /> : children;
 }
 
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HomeRedirect />} />
-      <Route path="/ingreso" element={<IngresoRoute />} />
+      <Route path="/ingreso" element={<Publica><Ingreso /></Publica>} />
+
+      {/* Link público de reservas del fotógrafo */}
+      <Route path="/f/:slug" element={<Publica><ElegirHorario /></Publica>} />
+      <Route
+        path="/f/:slug/propiedad"
+        element={
+          <RequireRole>
+            <div className="mx-auto max-w-md px-5 pt-8">
+              <Pendiente titulo="La propiedad" detalle="Acá vas a cargar la dirección, el acceso y el contacto." />
+            </div>
+          </RequireRole>
+        }
+      />
 
       <Route
         element={
@@ -78,7 +94,7 @@ function AppRoutes() {
           path="/reservar"
           element={
             <RequireRole allow={['agente']}>
-              <Pendiente titulo="Reservar sesión" detalle="Acá vas a elegir fotógrafo, servicios y horario." />
+              <Reservar />
             </RequireRole>
           }
         />

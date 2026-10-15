@@ -4,16 +4,10 @@ import Sheet from '@/components/ui/Sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SectionLabel } from '@/components/ui/primitives';
+import { textoDuracion } from '@/lib/fechas';
 
 // Duraciones de 15 minutos a 4 horas.
 const DURACIONES = Array.from({ length: 16 }, (_, i) => (i + 1) * 15);
-
-export function textoDuracion(min) {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  if (!h) return `${m} min`;
-  return m ? `${h} h ${m} min` : `${h} h`;
-}
 
 // servicio = null cerrado; {} nuevo; con id = edición.
 export default function EditorServicio({ servicio, onClose, onSave, onDelete }) {
