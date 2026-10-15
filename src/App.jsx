@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import AppShell from '@/components/AppShell';
 import { Spinner } from '@/components/ui/primitives';
 import Ingreso from '@/pages/Ingreso';
+import MiDisponibilidad from '@/pages/MiDisponibilidad';
 import Perfil from '@/pages/Perfil';
 import Pendiente from '@/pages/Pendiente';
 
@@ -67,7 +68,7 @@ function AppRoutes() {
           path="/horarios"
           element={
             <RequireRole allow={['fotografo']}>
-              <Pendiente titulo="Mi disponibilidad" detalle="Acá vas a cargar tus horarios de lunes a domingo." />
+              <MiDisponibilidad />
             </RequireRole>
           }
         />

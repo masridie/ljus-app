@@ -184,3 +184,23 @@ export function horarioLibre(p: Omit<ParamsHorarios, 'desde' | 'dias'>, fecha: s
 
 // Estados que ocupan agenda.
 export const ESTADOS_ACTIVOS = ['solicitado', 'confirmado', 'realizado', 'material_entregado'];
+
+// Turnos futuros (solicitados o confirmados) que no entran completos en el horario dado.
+// Sirve para avisar al proveedor antes de guardar un cambio; los turnos no se cancelan.
+export function turnosFueraDeHorario<T extends Ocupado & { estado?: string }>(
+  turnos: T[],
+  semana: DiaDisponibilidad[],
+  excepciones: Excepcion[],
+  ahora: Date,
+): T[] {
+  return turnos.filter((t) => {
+    if (!['solicitado', 'confirmado'].includes(t.estado || '')) return false;
+    const ini = new Date(t.inicio);
+    if (ini.getTime() <= ahora.getTime()) return false;
+    const fecha = fechaBA(ini);
+    const cero = instante(fecha, 0).getTime();
+    const a = (ini.getTime() - cero) / 60_000;
+    const b = (new Date(t.fin).getTime() - cero) / 60_000;
+    return !rangosDelDia(fecha, semana, excepciones).some(([ra, rb]) => a >= ra && b <= rb);
+  });
+}

@@ -7,6 +7,7 @@ import {
   horarioLibre,
   instante,
   rangosDelDia,
+  turnosFueraDeHorario,
   validarRangos,
 } from '../base44/shared/disponibilidad.ts';
 
@@ -140,4 +141,18 @@ test('validarRangos detecta superposiciones y rangos invertidos', () => {
 
 test('duración cero es un error', () => {
   assert.throws(() => calcularHorarios({ ...base, duracionMin: 0 }));
+});
+
+test('turnosFueraDeHorario avisa solo los turnos futuros activos que quedan afuera', () => {
+  const turnos = [
+    { id: 'adentro', estado: 'confirmado', inicio: '2026-10-19T09:00:00-03:00', fin: '2026-10-19T10:00:00-03:00' },
+    { id: 'afuera', estado: 'confirmado', inicio: '2026-10-19T12:30:00-03:00', fin: '2026-10-19T13:30:00-03:00' },
+    { id: 'solicitado', estado: 'solicitado', inicio: '2026-10-19T15:00:00-03:00', fin: '2026-10-19T16:00:00-03:00' },
+    { id: 'cancelado', estado: 'cancelado', inicio: '2026-10-19T15:00:00-03:00', fin: '2026-10-19T16:00:00-03:00' },
+    { id: 'pasado', estado: 'confirmado', inicio: '2026-10-12T15:00:00-03:00', fin: '2026-10-12T16:00:00-03:00' },
+    { id: 'bloqueado', estado: 'confirmado', inicio: '2026-10-20T10:00:00-03:00', fin: '2026-10-20T11:00:00-03:00' },
+  ];
+  const excepciones = [{ fecha: '2026-10-20', tipo: 'bloqueo' as const, dia_completo: true }];
+  const fuera = turnosFueraDeHorario(turnos, SEMANA, excepciones, AHORA);
+  assert.deepEqual(fuera.map((t) => t.id), ['afuera', 'solicitado', 'bloqueado']);
 });
