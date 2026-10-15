@@ -3,7 +3,7 @@ import { forwardRef } from 'react';
 const Input = forwardRef(({ className = '', ...props }, ref) => (
   <input
     ref={ref}
-    className={`flex h-9 w-full rounded-md border border-slate-200 bg-white px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-400 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+    className={`block w-full min-h-touch rounded-input border border-line bg-surface px-4 py-3 text-[16px] text-ink placeholder:text-ink-2/70 transition-colors focus:border-accent focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
     {...props}
   />
 ));

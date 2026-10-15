@@ -1,0 +1,86 @@
+// Turno reservado. Se crea y cambia de estado solo desde funciones backend
+// (validan el horario libre y avisan), por eso create/update quedan para el admin.
+{
+  "name": "Booking",
+  "type": "object",
+  "properties": {
+    "provider_id": { "type": "string", "description": "ID del Provider" },
+    "provider_email": { "type": "string", "format": "email", "description": "Email del proveedor (permisos)" },
+    "client_id": { "type": "string", "description": "ID del Client" },
+    "client_email": { "type": "string", "format": "email", "description": "Email del cliente (permisos)" },
+
+    // Copia de datos al momento de reservar, para mostrar sin cruzar entidades
+    "provider_nombre": { "type": "string" },
+    "provider_whatsapp": { "type": "string" },
+    "client_nombre": { "type": "string" },
+    "client_inmobiliaria": { "type": "string" },
+    "client_whatsapp": { "type": "string" },
+
+    "servicios": {
+      "type": "array",
+      "description": "Servicios reservados con su duración en ese momento",
+      "items": {
+        "type": "object",
+        "properties": {
+          "service_id": { "type": "string" },
+          "nombre": { "type": "string" },
+          "duracion_min": { "type": "integer" },
+          "precio": { "type": "number" }
+        }
+      }
+    },
+    "duracion_total_min": { "type": "integer" },
+    "inicio": { "type": "string", "format": "date-time", "description": "Instante ISO en UTC; se muestra en hora de Buenos Aires" },
+    "fin": { "type": "string", "format": "date-time" },
+
+    "estado": {
+      "type": "string",
+      "enum": [
+        "solicitado",
+        "confirmado",
+        "rechazado",
+        "realizado",
+        "material_entregado",
+        "cancelado",
+        "reprogramado"
+      ],
+      "default": "solicitado"
+    },
+
+    "direccion": { "type": "string", "description": "Dirección formateada (Google Places)" },
+    "direccion_place_id": { "type": "string" },
+    "lat": { "type": "number" },
+    "lng": { "type": "number" },
+    "piso_unidad": { "type": "string" },
+    "m2": { "type": "number" },
+    "acceso_tipo": {
+      "type": "string",
+      "enum": ["llaves_inmobiliaria", "llaves_porteria", "propietario_presente", "otro"]
+    },
+    "acceso_detalle": { "type": "string", "description": "Detalle cuando el acceso es 'otro'" },
+    "contacto_nombre": { "type": "string", "description": "Contacto en el lugar" },
+    "contacto_whatsapp": { "type": "string" },
+    "avisar_contacto": { "type": "boolean", "default": false },
+    "notas": { "type": "string", "description": "Notas para el fotógrafo" },
+
+    "material_url": { "type": "string", "description": "Link del material entregado" },
+    "gcal_event_id_proveedor": { "type": "string", "description": "Evento en el Google Calendar del proveedor" },
+    "gcal_event_id_cliente": { "type": "string", "description": "Evento en el Google Calendar del agente" },
+    "recordatorio_enviado": { "type": "boolean", "default": false },
+    "codigo_corto": { "type": "string", "description": "Código del link público del turno (único)" },
+    "reprogramado_desde_id": { "type": "string", "description": "Turno original si este es una reprogramación" }
+  },
+  "required": ["provider_id", "provider_email", "client_email", "inicio", "fin", "estado"],
+  "rls": {
+    "create": { "user_condition": { "role": "admin" } },
+    "read": {
+      "$or": [
+        { "data.provider_email": "{{user.email}}" },
+        { "data.client_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": { "user_condition": { "role": "admin" } },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}

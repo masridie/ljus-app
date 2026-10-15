@@ -1,41 +1,40 @@
-# Todo App
+# Ljus
 
-A simple todo list app built with React and Base44 backend.
+App web mobile-first de reservas entre fotógrafos inmobiliarios y agentes inmobiliarios en Buenos Aires. Hecha con React + Vite sobre Base44.
 
-## Structure
+## Estructura
 
 ```
-base44/               # Backend configuration
-├── config.jsonc      # Project settings
-└── entities/         # Data schemas
-    └── Task.jsonc    # Task entity
+base44/                 # Backend de Base44
+├── config.jsonc        # Nombre y build del sitio
+├── auth/config.jsonc   # Métodos de ingreso (solo Google)
+├── entities/           # Esquemas de datos (un .jsonc por entidad)
+└── functions/          # Funciones backend (una carpeta con entry.ts por función)
 
-src/                  # Frontend code
-├── App.jsx           # Main todo app
-├── api/              # Base44 client
-├── components/ui/    # UI components
-└── lib/              # Utilities
+src/
+├── App.jsx             # Rutas y protección por rol
+├── api/base44Client.js # Cliente del SDK de Base44
+├── lib/AuthContext.jsx # Sesión, rol (fotógrafo / agente / admin)
+├── components/         # AppShell (barra inferior), RoleCards, ui/
+└── pages/              # Una pantalla por archivo
 ```
 
-## Development
+## Desarrollo local
+
+Requiere Node 22 (`nvm use 22`).
 
 ```bash
 npm install
-npm run dev
+npx base44 dev            # backend local + frontend
+npx base44 dev --remote   # solo frontend contra el backend publicado (datos reales)
 ```
 
-## Commands
+## Publicar
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start dev server |
-| `npm run build` | Build for production |
-| `npm run preview` | Preview production build |
-
-## Base44 CLI
+Solo con OK de Diego:
 
 ```bash
-base44 login          # Authenticate
-base44 entities push  # Push entity schemas
-base44 deploy         # Deploy backend + hosting
+npx base44 deploy
 ```
+
+Las claves y URLs de webhook van en los secretos de Base44 (`npx base44 secrets set`), nunca en el código.

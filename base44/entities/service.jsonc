@@ -1,0 +1,54 @@
+// Servicio que ofrece un proveedor (Fotos, Plano, Video, Drone, Tour 360...).
+{
+  "name": "Service",
+  "type": "object",
+  "properties": {
+    "provider_id": {
+      "type": "string",
+      "description": "ID del Provider"
+    },
+    "provider_email": {
+      "type": "string",
+      "format": "email",
+      "description": "Email del dueño del Provider (para permisos)"
+    },
+    "nombre": {
+      "type": "string",
+      "description": "Nombre del servicio, ej. Fotos, Plano, Video, Drone, Tour 360"
+    },
+    "duracion_min": {
+      "type": "integer",
+      "description": "Duración en minutos"
+    },
+    "precio": {
+      "type": "number",
+      "description": "Precio en ARS. Vacío o 0 = sin precio publicado"
+    },
+    "activo": {
+      "type": "boolean",
+      "default": true
+    },
+    "orden": {
+      "type": "integer",
+      "default": 0,
+      "description": "Orden en que se muestra"
+    }
+  },
+  "required": ["provider_id", "provider_email", "nombre", "duracion_min"],
+  "rls": {
+    "create": { "data.provider_email": "{{user.email}}" },
+    "read": true,
+    "update": {
+      "$or": [
+        { "data.provider_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "data.provider_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
+}
