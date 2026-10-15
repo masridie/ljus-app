@@ -1,0 +1,63 @@
+// Excepción puntual a la disponibilidad: un bloqueo o una apertura extra en una fecha.
+{
+  "name": "AvailabilityException",
+  "type": "object",
+  "properties": {
+    "provider_id": {
+      "type": "string",
+      "description": "ID del Provider"
+    },
+    "provider_email": {
+      "type": "string",
+      "format": "email",
+      "description": "Email del dueño del Provider (para permisos)"
+    },
+    "fecha": {
+      "type": "string",
+      "format": "date",
+      "description": "Fecha en hora de Buenos Aires (AAAA-MM-DD)"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": ["bloqueo", "apertura"],
+      "description": "bloqueo: no disponible; apertura: horario extra"
+    },
+    "dia_completo": {
+      "type": "boolean",
+      "default": false
+    },
+    "inicio": {
+      "type": "string",
+      "description": "HH:mm (si no es día completo)"
+    },
+    "fin": {
+      "type": "string",
+      "description": "HH:mm (si no es día completo)"
+    },
+    "motivo": {
+      "type": "string"
+    }
+  },
+  "required": ["provider_id", "provider_email", "fecha", "tipo"],
+  "rls": {
+    "create": { "data.provider_email": "{{user.email}}" },
+    "read": {
+      "$or": [
+        { "data.provider_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "data.provider_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "data.provider_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
+}

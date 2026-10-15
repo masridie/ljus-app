@@ -1,0 +1,58 @@
+// Horario semanal de un proveedor: una fila por día de la semana.
+// Los agentes no la leen directo: los horarios libres salen de la función backend.
+{
+  "name": "Availability",
+  "type": "object",
+  "properties": {
+    "provider_id": {
+      "type": "string",
+      "description": "ID del Provider"
+    },
+    "provider_email": {
+      "type": "string",
+      "format": "email",
+      "description": "Email del dueño del Provider (para permisos)"
+    },
+    "dia_semana": {
+      "type": "integer",
+      "description": "1 = lunes ... 7 = domingo (ISO)"
+    },
+    "activo": {
+      "type": "boolean",
+      "default": true
+    },
+    "rangos": {
+      "type": "array",
+      "description": "Rangos horarios del día, sin superponerse",
+      "items": {
+        "type": "object",
+        "properties": {
+          "inicio": { "type": "string", "description": "HH:mm, ej. 09:00" },
+          "fin": { "type": "string", "description": "HH:mm, ej. 13:00" }
+        }
+      }
+    }
+  },
+  "required": ["provider_id", "provider_email", "dia_semana"],
+  "rls": {
+    "create": { "data.provider_email": "{{user.email}}" },
+    "read": {
+      "$or": [
+        { "data.provider_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "data.provider_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "data.provider_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    }
+  }
+}

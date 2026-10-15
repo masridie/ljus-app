@@ -1,0 +1,84 @@
+// Proveedor de servicios (hoy: fotógrafo inmobiliario). Genérico para otros rubros
+// a futuro (tasadores, home staging) vía "rubro".
+{
+  "name": "Provider",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "format": "email",
+      "description": "Email del usuario dueño del perfil"
+    },
+    "rubro": {
+      "type": "string",
+      "default": "fotografia",
+      "description": "Rubro del proveedor (fotografia, tasacion, home_staging...)"
+    },
+    "nombre_comercial": {
+      "type": "string",
+      "description": "Nombre que ven los agentes"
+    },
+    "foto_url": {
+      "type": "string",
+      "description": "Foto o logo del proveedor"
+    },
+    "bio": {
+      "type": "string",
+      "description": "Presentación corta"
+    },
+    "whatsapp": {
+      "type": "string",
+      "description": "WhatsApp con código de país, ej. +5491122334455",
+      "rls": {
+        "read": {
+          "$or": [
+            { "data.user_email": "{{user.email}}" },
+            { "user_condition": { "role": "admin" } }
+          ]
+        }
+      }
+    },
+    "zona_cobertura": {
+      "type": "string",
+      "description": "Barrios o zonas que cubre, texto libre"
+    },
+    "slug": {
+      "type": "string",
+      "description": "Identificador del link público de reservas (único)"
+    },
+    "margen_traslado_min": {
+      "type": "integer",
+      "default": 30,
+      "description": "Minutos libres antes y después de cada turno para trasladarse"
+    },
+    "anticipacion_min_horas": {
+      "type": "integer",
+      "default": 12,
+      "description": "Horas mínimas de anticipación para reservar"
+    },
+    "modo_confirmacion": {
+      "type": "string",
+      "enum": ["automatica", "aprobacion"],
+      "default": "automatica",
+      "description": "automatica: el turno queda confirmado; aprobacion: el proveedor lo aprueba"
+    },
+    "onboarding_completo": {
+      "type": "boolean",
+      "default": false,
+      "description": "Terminó de cargar servicios, disponibilidad y zona"
+    }
+  },
+  "required": ["user_email", "nombre_comercial", "slug"],
+  "rls": {
+    "create": { "data.user_email": "{{user.email}}" },
+    // Lectura pública: lo necesita el link de reservas
+    "read": true,
+    "update": {
+      "$or": [
+        { "data.user_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } }
+      ]
+    },
+    "delete": { "user_condition": { "role": "admin" } }
+  }
+}
