@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
+import { ACCESO_LABEL } from '@shared/mensajes.ts';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { fechaCorta } from '@/lib/fechas';
@@ -10,12 +11,7 @@ import { Card, FixedFooter, SectionLabel, Spinner, Switch, Title } from '@/compo
 
 const { Provider, Service } = base44.entities;
 
-export const ACCESOS = [
-  { value: 'llaves_inmobiliaria', label: 'Llaves en la inmobiliaria' },
-  { value: 'llaves_porteria', label: 'Llaves en portería' },
-  { value: 'propietario_presente', label: 'Propietario presente' },
-  { value: 'otro', label: 'Otro' },
-];
+const ACCESOS = Object.entries(ACCESO_LABEL).map(([value, label]) => ({ value, label }));
 
 function Campo({ label, children, className = '' }) {
   return (
@@ -87,7 +83,7 @@ export default function LaPropiedad() {
         hora,
         ...form,
       });
-      navigate(`/turno/${data.booking.codigo_corto}`, { replace: true, state: { recien: true } });
+      navigate(`/turno/${data.booking.codigo_corto}`, { replace: true });
     } catch (e) {
       setOcupado(e.response?.status === 409);
       setError(e.response?.data?.error || 'No pudimos confirmar la reserva. Probá de nuevo.');

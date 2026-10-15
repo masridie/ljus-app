@@ -38,3 +38,10 @@ export function partesFecha(fecha) {
 }
 
 export const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+const fmtLarga = new Intl.DateTimeFormat('es-AR', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long' });
+
+// ISO -> 'Lunes 19 de octubre'
+export function fechaLarga(iso) {
+  return capitalizar(fmtLarga.format(new Date(iso)).replace(',', ''));
+}

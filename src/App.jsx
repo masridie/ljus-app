@@ -9,6 +9,7 @@ import MiDisponibilidad from '@/pages/MiDisponibilidad';
 import Perfil from '@/pages/Perfil';
 import Pendiente from '@/pages/Pendiente';
 import Reservar from '@/pages/Reservar';
+import SesionConfirmada from '@/pages/SesionConfirmada';
 
 function FullScreenSpinner() {
   return (
@@ -65,11 +66,9 @@ function AppRoutes() {
       <Route
         path="/turno/:codigo"
         element={
-          <RequireRole>
-            <div className="mx-auto max-w-md px-5 pt-8">
-              <Pendiente titulo="Sesión confirmada" detalle="Acá vas a ver el resumen del turno." />
-            </div>
-          </RequireRole>
+          <Publica>
+            <SesionConfirmada />
+          </Publica>
         }
       />
 
