@@ -4,6 +4,7 @@ import AppShell from '@/components/AppShell';
 import { Spinner } from '@/components/ui/primitives';
 import ElegirHorario from '@/pages/ElegirHorario';
 import Ingreso from '@/pages/Ingreso';
+import LaPropiedad from '@/pages/LaPropiedad';
 import MiDisponibilidad from '@/pages/MiDisponibilidad';
 import Perfil from '@/pages/Perfil';
 import Pendiente from '@/pages/Pendiente';
@@ -57,8 +58,16 @@ function AppRoutes() {
         path="/f/:slug/propiedad"
         element={
           <RequireRole>
+            <LaPropiedad />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/turno/:codigo"
+        element={
+          <RequireRole>
             <div className="mx-auto max-w-md px-5 pt-8">
-              <Pendiente titulo="La propiedad" detalle="Acá vas a cargar la dirección, el acceso y el contacto." />
+              <Pendiente titulo="Sesión confirmada" detalle="Acá vas a ver el resumen del turno." />
             </div>
           </RequireRole>
         }

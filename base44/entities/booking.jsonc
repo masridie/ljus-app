@@ -30,7 +30,7 @@
       }
     },
     "duracion_total_min": { "type": "integer" },
-    "inicio": { "type": "string", "format": "date-time", "description": "ISO con offset de Buenos Aires" },
+    "inicio": { "type": "string", "format": "date-time", "description": "Instante ISO en UTC; se muestra en hora de Buenos Aires" },
     "fin": { "type": "string", "format": "date-time" },
 
     "estado": {

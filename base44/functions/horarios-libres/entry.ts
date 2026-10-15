@@ -33,7 +33,9 @@ export default async function (req: Request): Promise<Response> {
     // Servicios elegidos: tienen que ser del proveedor y estar activos
     const todos = await db.Service.filter({ provider_id: provider.id });
     const pedidos = Array.isArray(service_ids) ? service_ids : [];
-    const servicios = todos.filter((s: any) => s.activo !== false && pedidos.includes(s.id));
+    const servicios = todos
+      .filter((s: any) => s.activo !== false && pedidos.includes(s.id))
+      .sort((a: any, b: any) => (a.orden ?? 0) - (b.orden ?? 0));
     if (!servicios.length || servicios.length !== new Set(pedidos).size) {
       return Response.json({ error: 'Elegí al menos un servicio válido' }, { status: 400 });
     }
