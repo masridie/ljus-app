@@ -22,7 +22,7 @@
     },
     "precio": {
       "type": "number",
-      "description": "Precio en ARS (opcional)"
+      "description": "Precio en ARS. Vacío o 0 = sin precio publicado"
     },
     "activo": {
       "type": "boolean",
