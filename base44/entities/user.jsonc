@@ -1,0 +1,13 @@
+// Campos propios sobre el User nativo de Base44.
+// El admin usa el role nativo ("admin"); fotógrafo y agente se guardan en "tipo".
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "tipo": {
+      "type": "string",
+      "enum": ["fotografo", "agente"],
+      "description": "Rol elegido al ingresar: fotografo (maneja su agenda) o agente (reserva sesiones)"
+    }
+  }
+}

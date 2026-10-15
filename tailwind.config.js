@@ -3,37 +3,49 @@ export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {
     extend: {
-      borderRadius: {
-        lg: 'var(--radius)',
-        md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)',
+      fontFamily: {
+        sans: ['"Hanken Grotesk"', 'system-ui', '-apple-system', 'sans-serif'],
       },
+      // Sistema de diseño Ljus (escandinavo, minimalista)
       colors: {
-        background: 'hsl(var(--background))',
-        foreground: 'hsl(var(--foreground))',
-        primary: {
-          DEFAULT: 'hsl(var(--primary))',
-          foreground: 'hsl(var(--primary-foreground))',
+        bg: '#F5F3EF',
+        surface: '#FFFFFF',
+        ink: {
+          DEFAULT: '#1B1B19',
+          2: '#5E5B55',
         },
-        secondary: {
-          DEFAULT: 'hsl(var(--secondary))',
-          foreground: 'hsl(var(--secondary-foreground))',
-        },
-        muted: {
-          DEFAULT: 'hsl(var(--muted))',
-          foreground: 'hsl(var(--muted-foreground))',
+        line: {
+          DEFAULT: '#E4E0D9',
+          soft: '#EEEBE5',
         },
         accent: {
-          DEFAULT: 'hsl(var(--accent))',
-          foreground: 'hsl(var(--accent-foreground))',
+          DEFAULT: '#2F4F46',
+          hover: '#1F3530',
+          soft: '#E6ECE9',
         },
-        destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
+        pending: {
+          DEFAULT: '#F6E7D3',
+          ink: '#7A4A12',
         },
-        border: 'hsl(var(--border))',
-        input: 'hsl(var(--input))',
-        ring: 'hsl(var(--ring))',
+      },
+      borderRadius: {
+        input: '12px',
+        btn: '14px',
+        card: '16px',
+      },
+      fontSize: {
+        label: ['13px', { lineHeight: '18px', letterSpacing: '0.08em' }],
+        title: ['28px', { lineHeight: '34px', letterSpacing: '-0.02em' }],
+        'title-lg': ['36px', { lineHeight: '42px', letterSpacing: '-0.025em' }],
+      },
+      height: {
+        cta: '54px',
+      },
+      minHeight: {
+        touch: '44px',
+      },
+      minWidth: {
+        touch: '44px',
       },
     },
   },
