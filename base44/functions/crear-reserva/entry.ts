@@ -6,20 +6,23 @@
 //            contacto_whatsapp?, avisar_contacto?, notas? }
 // Salida:  { booking }
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
-import { ESTADOS_ACTIVOS, aMinutos, horarioLibre, instante } from '../../shared/disponibilidad.ts';
+import {
+  codigoCorto,
+  copiaServicios,
+  duracionTotal,
+  horarioDisponible,
+  isoUTC,
+  perdioCarrera,
+  rango,
+  serviciosElegidos,
+} from '../../shared/reservas.ts';
 
 const ACCESOS = ['llaves_inmobiliaria', 'llaves_porteria', 'propietario_presente', 'otro'];
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 const HORA = /^\d{2}:\d{2}$/;
-const ALFABETO = 'abcdefghjkmnpqrstuvwxyz23456789';
 
 const texto = (v: unknown, max = 300) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 const telefono = (v: unknown) => texto(v, 30).replace(/[^\d+]/g, '');
-
-function codigo(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(8));
-  return Array.from(bytes, (b) => ALFABETO[b % ALFABETO.length]).join('');
-}
 
 const error = (mensaje: string, status = 400) => Response.json({ error: mensaje }, { status });
 
@@ -57,32 +60,11 @@ export default async function (req: Request): Promise<Response> {
     const provider = await db.Provider.get(provider_id).catch(() => null);
     if (!provider) return error('Fotógrafo no encontrado', 404);
 
-    const todos = await db.Service.filter({ provider_id });
-    const servicios = todos
-      .filter((s: any) => s.activo !== false && service_ids.includes(s.id))
-      .sort((a: any, b: any) => (a.orden ?? 0) - (b.orden ?? 0));
-    if (!servicios.length || servicios.length !== new Set(service_ids).size) {
-      return error('Elegí al menos un servicio válido');
-    }
-    const duracion = servicios.reduce((t: number, s: any) => t + (s.duracion_min || 0), 0);
+    const servicios = await serviciosElegidos(db, provider_id, service_ids);
+    if (!servicios) return error('Elegí al menos un servicio válido');
+    const duracion = duracionTotal(servicios);
 
-    const [semana, excepciones, turnos] = await Promise.all([
-      db.Availability.filter({ provider_id }),
-      db.AvailabilityException.filter({ provider_id, fecha }),
-      db.Booking.filter({ provider_id }, '-inicio', 1000),
-    ]);
-    const activos = (ts: any[]) => ts.filter((t) => ESTADOS_ACTIVOS.includes(t.estado));
-    const params = {
-      semana,
-      excepciones,
-      ocupados: activos(turnos),
-      margenMin: provider.margen_traslado_min ?? 30,
-      duracionMin: duracion,
-      anticipacionHoras: provider.anticipacion_min_horas ?? 12,
-      ahora: new Date(),
-    };
-    // Etapa 2: sumar a "ocupados" el free/busy del Google Calendar del fotógrafo.
-    if (!horarioLibre(params, fecha, hora)) {
+    if (!(await horarioDisponible(db, provider, fecha, hora, duracion))) {
       return error('Ese horario ya no está disponible. Elegí otro.', 409);
     }
 
@@ -92,9 +74,7 @@ export default async function (req: Request): Promise<Response> {
       cliente = await db.Client.create({ user_email: user.email, nombre: user.full_name || user.email.split('@')[0] });
     }
 
-    const inicio = instante(fecha, aMinutos(hora));
-    const fin = new Date(inicio.getTime() + duracion * 60_000);
-    const iso = (d: Date) => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+    const { inicio, fin } = rango(fecha, hora, duracion);
 
     const booking = await db.Booking.create({
       provider_id,
@@ -106,15 +86,10 @@ export default async function (req: Request): Promise<Response> {
       client_nombre: cliente.nombre,
       ...(cliente.inmobiliaria && { client_inmobiliaria: cliente.inmobiliaria }),
       ...(cliente.whatsapp && { client_whatsapp: cliente.whatsapp }),
-      servicios: servicios.map((s: any) => ({
-        service_id: s.id,
-        nombre: s.nombre,
-        duracion_min: s.duracion_min,
-        ...(s.precio ? { precio: s.precio } : {}),
-      })),
+      servicios: copiaServicios(servicios),
       duracion_total_min: duracion,
-      inicio: iso(inicio),
-      fin: iso(fin),
+      inicio: isoUTC(inicio),
+      fin: isoUTC(fin),
       estado: provider.modo_confirmacion === 'aprobacion' ? 'solicitado' : 'confirmado',
       direccion,
       ...(texto(body.piso_unidad, 50) && { piso_unidad: texto(body.piso_unidad, 50) }),
@@ -126,20 +101,10 @@ export default async function (req: Request): Promise<Response> {
       avisar_contacto,
       ...(texto(body.notas, 1000) && { notas: texto(body.notas, 1000) }),
       recordatorio_enviado: false,
-      codigo_corto: codigo(),
+      codigo_corto: codigoCorto(),
     });
 
-    // Dos reservas casi simultáneas: si otra pisó este horario, gana la que se creó primero.
-    const despues = activos(await db.Booking.filter({ provider_id }, '-inicio', 1000));
-    const margen = (provider.margen_traslado_min ?? 30) * 60_000;
-    const choca = despues.find(
-      (t: any) =>
-        t.id !== booking.id &&
-        new Date(t.inicio).getTime() - margen < fin.getTime() &&
-        new Date(t.fin).getTime() + margen > inicio.getTime() &&
-        (t.created_date < booking.created_date || (t.created_date === booking.created_date && t.id < booking.id)),
-    );
-    if (choca) {
+    if (await perdioCarrera(db, provider, booking)) {
       await db.Booking.delete(booking.id);
       return error('Ese horario se acaba de ocupar. Elegí otro.', 409);
     }

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Check, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { fechaBA, sumarDias } from '@shared/disponibilidad.ts';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
-import { partesFecha, textoDuracion } from '@/lib/fechas';
+import { fechaHora, partesFecha, textoDuracion } from '@/lib/fechas';
 import Avatar from '@/components/ui/Avatar';
 import { Button } from '@/components/ui/button';
 import { Chip, FixedFooter, SectionLabel, Spinner } from '@/components/ui/primitives';
@@ -12,8 +12,11 @@ import { Chip, FixedFooter, SectionLabel, Spinner } from '@/components/ui/primit
 const { Provider, Service } = base44.entities;
 
 // Elegir horario. Pública: también se abre desde el link de reservas del fotógrafo.
+// Con ?reprogramar=<código> mueve ese turno a otro horario.
 export default function ElegirHorario() {
   const { slug } = useParams();
+  const [searchParams] = useSearchParams();
+  const reprogramar = searchParams.get('reprogramar');
   const navigate = useNavigate();
   const { isAuthenticated, loginWithGoogle } = useAuth();
 
@@ -26,21 +29,30 @@ export default function ElegirHorario() {
   const [hora, setHora] = useState(null);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState(null);
+  const [original, setOriginal] = useState(null);
+  const [enviando, setEnviando] = useState(false);
   const pedido = useRef(0);
 
-  // Proveedor y servicios activos
+  // Proveedor, servicios activos y, si se reprograma, el turno original
   useEffect(() => {
     (async () => {
       const [p] = await Provider.filter({ slug }, undefined, 1);
       if (!p) return setError('No encontramos este fotógrafo. Revisá el link.');
+      const turno = reprogramar
+        ? (await base44.functions.invoke('ver-turno', { codigo: reprogramar })).data.turno
+        : null;
+      const previos = (turno?.servicios || []).map((s) => s.service_id);
+      // Los servicios del turno original se ofrecen aunque estén pausados
       const lista = (await Service.filter({ provider_id: p.id }))
-        .filter((s) => s.activo !== false)
+        .filter((s) => s.activo !== false || previos.includes(s.id))
         .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
       setProvider(p);
+      setOriginal(turno);
       setServicios(lista);
-      if (lista.length) setElegidos([lista[0].id]);
-    })().catch((e) => setError(e.message));
-  }, [slug]);
+      const iniciales = previos.filter((id) => lista.some((s) => s.id === id));
+      setElegidos(iniciales.length ? iniciales : lista.length ? [lista[0].id] : []);
+    })().catch((e) => setError(e.response?.data?.error || e.message));
+  }, [slug, reprogramar]);
 
   // Horarios libres de la semana para los servicios elegidos
   useEffect(() => {
@@ -51,7 +63,13 @@ export default function ElegirHorario() {
     const id = ++pedido.current;
     setCargando(true);
     base44.functions
-      .invoke('horarios-libres', { provider_id: provider.id, service_ids: elegidos, desde, dias: 7 })
+      .invoke('horarios-libres', {
+        provider_id: provider.id,
+        service_ids: elegidos,
+        desde,
+        dias: 7,
+        ...(reprogramar && { excluir_codigo: reprogramar }),
+      })
       .then(({ data }) => {
         if (id !== pedido.current) return;
         setDias(data.dias);
@@ -59,7 +77,7 @@ export default function ElegirHorario() {
       })
       .catch((e) => id === pedido.current && setError(e.response?.data?.error || 'No pudimos cargar los horarios'))
       .finally(() => id === pedido.current && setCargando(false));
-  }, [provider, elegidos, desde]);
+  }, [provider, elegidos, desde, reprogramar]);
 
   // Al cambiar la semana o los servicios: mantener el día si sigue teniendo horarios,
   // si no, pasar al primero disponible. La hora se borra si cambió el día o dejó de estar libre.
@@ -82,11 +100,32 @@ export default function ElegirHorario() {
   const alternarServicio = (id) =>
     setElegidos((xs) => (xs.includes(id) ? xs.filter((x) => x !== id) : [...xs, id]));
 
+  const confirmarCambio = async () => {
+    setEnviando(true);
+    setError(null);
+    try {
+      const { data } = await base44.functions.invoke('reprogramar-reserva', {
+        codigo: reprogramar,
+        service_ids: elegidos,
+        fecha,
+        hora,
+      });
+      navigate(`/turno/${data.booking.codigo_corto}`, { replace: true });
+    } catch (e) {
+      setError(e.response?.data?.error || 'No pudimos reprogramar. Probá de nuevo.');
+      setEnviando(false);
+    }
+  };
+
   const continuar = () => {
+    if (!isAuthenticated) {
+      loginWithGoogle('agente', `${window.location.pathname}${window.location.search}`);
+      return;
+    }
+    if (reprogramar) return confirmarCambio();
     const params = new URLSearchParams({ s: elegidos.join(','), fecha, hora });
     const destino = `/f/${slug}/propiedad?${params}`;
-    if (isAuthenticated) navigate(destino);
-    else loginWithGoogle('agente', destino);
+    navigate(destino);
   };
 
   if (error && !provider) {
@@ -100,10 +139,14 @@ export default function ElegirHorario() {
     );
   }
 
-  const etiquetaBoton =
-    fecha && hora
-      ? `Continuar · ${partesFecha(fecha).corto} ${partesFecha(fecha).numero}, ${hora}`
-      : 'Elegí un horario';
+  const elegido = fecha && hora ? `${partesFecha(fecha).corto} ${partesFecha(fecha).numero}, ${hora}` : null;
+  const etiquetaBoton = !elegido
+    ? 'Elegí un horario'
+    : enviando
+      ? 'Reprogramando…'
+      : reprogramar
+        ? `Reprogramar a ${elegido}`
+        : `Continuar · ${elegido}`;
 
   return (
     <div className="mx-auto w-full max-w-md px-5 pb-32 pt-8">
@@ -115,6 +158,15 @@ export default function ElegirHorario() {
           {provider.zona_cobertura && <p className="text-[14px] text-ink-2">{provider.zona_cobertura}</p>}
         </div>
       </header>
+
+      {original && (
+        <div className="mt-6 rounded-card bg-accent-soft p-4 text-accent">
+          <p className="text-label font-medium uppercase">Reprogramando</p>
+          <p className="mt-1 text-[15px] tabular">
+            {fechaHora(original.inicio)} · {original.direccion}
+          </p>
+        </div>
+      )}
 
       <SectionLabel className="mb-3 mt-8">Servicios</SectionLabel>
       {servicios.length ? (
@@ -224,7 +276,7 @@ export default function ElegirHorario() {
       {error && <p className="mt-4 text-[14px] text-pending-ink">{error}</p>}
 
       <FixedFooter>
-        <Button size="lg" className="w-full" disabled={!fecha || !hora || !elegidos.length} onClick={continuar}>
+        <Button size="lg" className="w-full" disabled={!fecha || !hora || !elegidos.length || enviando} onClick={continuar}>
           {etiquetaBoton}
         </Button>
       </FixedFooter>

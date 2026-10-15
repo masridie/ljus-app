@@ -2,10 +2,12 @@
 // Es pública: la usa también el link de reservas sin sesión. Solo devuelve horarios,
 // nunca los turnos ni la agenda del proveedor.
 //
-// Entrada: { slug | provider_id, service_ids: string[], desde?: 'AAAA-MM-DD', dias?: number }
+// Entrada: { slug | provider_id, service_ids: string[], desde?: 'AAAA-MM-DD', dias?: number,
+//            excluir_codigo?: turno que se está reprogramando (no cuenta como ocupado) }
 // Salida:  { provider, servicios, duracion_total_min, dias: [{ fecha, dia_semana, slots }] }
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.54';
 import { ESTADOS_ACTIVOS, calcularHorarios, fechaBA, sumarDias } from '../../shared/disponibilidad.ts';
+import { duracionTotal, serviciosElegidos } from '../../shared/reservas.ts';
 
 const MAX_DIAS = 31;
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
@@ -30,16 +32,16 @@ export default async function (req: Request): Promise<Response> {
       : await db.Provider.filter({ slug }, undefined, 1);
     if (!provider) return Response.json({ error: 'Proveedor no encontrado' }, { status: 404 });
 
-    // Servicios elegidos: tienen que ser del proveedor y estar activos
-    const todos = await db.Service.filter({ provider_id: provider.id });
+    const [excluido] =
+      typeof body.excluir_codigo === 'string' && body.excluir_codigo
+        ? await db.Booking.filter({ codigo_corto: body.excluir_codigo, provider_id: provider.id }, undefined, 1)
+        : [];
+    // Servicios elegidos: del proveedor y activos (los del turno que se reprograma valen igual)
     const pedidos = Array.isArray(service_ids) ? service_ids : [];
-    const servicios = todos
-      .filter((s: any) => s.activo !== false && pedidos.includes(s.id))
-      .sort((a: any, b: any) => (a.orden ?? 0) - (b.orden ?? 0));
-    if (!servicios.length || servicios.length !== new Set(pedidos).size) {
-      return Response.json({ error: 'Elegí al menos un servicio válido' }, { status: 400 });
-    }
-    const duracion = servicios.reduce((t: number, s: any) => t + (s.duracion_min || 0), 0);
+    const permitidos = (excluido?.servicios || []).map((s: any) => s.service_id);
+    const servicios = await serviciosElegidos(db, provider.id, pedidos, permitidos);
+    if (!servicios) return Response.json({ error: 'Elegí al menos un servicio válido' }, { status: 400 });
+    const duracion = duracionTotal(servicios);
 
     const ahora = new Date();
     const desde = body.desde && body.desde > fechaBA(ahora) ? body.desde : fechaBA(ahora);
@@ -56,7 +58,7 @@ export default async function (req: Request): Promise<Response> {
 
     // Turnos activos que tocan el período (con un día de colchón por el margen de traslado)
     const ocupados = turnos.filter((t: any) => {
-      if (!ESTADOS_ACTIVOS.includes(t.estado)) return false;
+      if (!ESTADOS_ACTIVOS.includes(t.estado) || t.id === excluido?.id) return false;
       const ini = new Date(t.inicio).getTime();
       const fin = new Date(t.fin).getTime();
       return fin > desdeMs - 86_400_000 && ini < hastaMs + 86_400_000;
