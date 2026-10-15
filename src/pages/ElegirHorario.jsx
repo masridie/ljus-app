@@ -6,6 +6,7 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { fechaHora, partesFecha, textoDuracion } from '@/lib/fechas';
 import Avatar from '@/components/ui/Avatar';
+import TiraDias from '@/components/ui/TiraDias';
 import { Button } from '@/components/ui/button';
 import { Chip, FixedFooter, SectionLabel, Spinner } from '@/components/ui/primitives';
 
@@ -210,36 +211,16 @@ export default function ElegirHorario() {
             </div>
           </div>
 
-          <div className={`grid grid-cols-7 gap-1.5 transition-opacity ${cargando ? 'opacity-50' : ''}`}>
-            {(dias || Array.from({ length: 7 }, (_, i) => ({ fecha: sumarDias(desde, i), slots: [] }))).map((d) => {
-              const { corto, numero } = partesFecha(d.fecha);
-              const disponible = d.slots.length > 0;
-              const sel = d.fecha === fecha;
-              return (
-                <button
-                  key={d.fecha}
-                  type="button"
-                  disabled={!disponible}
-                  aria-pressed={sel}
-                  aria-label={`${corto} ${numero}${disponible ? '' : ', sin horarios'}`}
-                  onClick={() => {
-                    setFecha(d.fecha);
-                    setHora(null);
-                  }}
-                  className={`flex min-h-[64px] flex-col items-center justify-center rounded-input border text-center ${
-                    sel
-                      ? 'border-ink bg-ink text-white'
-                      : disponible
-                        ? 'border-line bg-surface hover:border-ink-2'
-                        : 'border-transparent bg-transparent text-ink-2/50'
-                  }`}
-                >
-                  <span className="text-[12px] font-medium">{corto}</span>
-                  <span className="text-[18px] font-semibold tabular">{numero}</span>
-                </button>
-              );
-            })}
-          </div>
+          <TiraDias
+            className={`transition-opacity ${cargando ? 'opacity-50' : ''}`}
+            fechas={Array.from({ length: 7 }, (_, i) => sumarDias(desde, i))}
+            seleccion={fecha}
+            deshabilitado={(f) => !dias?.find((d) => d.fecha === f)?.slots.length}
+            onSelect={(f) => {
+              setFecha(f);
+              setHora(null);
+            }}
+          />
 
           <SectionLabel className="mb-3 mt-8">Horario</SectionLabel>
           {cargando && !dias ? (

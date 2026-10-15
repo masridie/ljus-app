@@ -10,6 +10,7 @@ import Perfil from '@/pages/Perfil';
 import Pendiente from '@/pages/Pendiente';
 import Reservar from '@/pages/Reservar';
 import SesionConfirmada from '@/pages/SesionConfirmada';
+import TuAgenda from '@/pages/TuAgenda';
 
 function FullScreenSpinner() {
   return (
@@ -84,7 +85,7 @@ function AppRoutes() {
           path="/agenda"
           element={
             <RequireRole allow={['fotografo']}>
-              <Pendiente titulo="Tu agenda" detalle="Acá vas a ver los turnos de cada día." />
+              <TuAgenda />
             </RequireRole>
           }
         />
